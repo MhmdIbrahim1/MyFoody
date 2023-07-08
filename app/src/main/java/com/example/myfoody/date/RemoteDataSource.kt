@@ -1,6 +1,6 @@
 package com.example.myfoody.date
 
-import com.example.myfoody.date.Network.FoodRecipesApi
+import com.example.myfoody.date.network.FoodRecipesApi
 import com.example.myfoody.models.FoodJoke
 import com.example.myfoody.models.FoodRecipe
 import retrofit2.Response

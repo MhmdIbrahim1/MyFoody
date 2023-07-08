@@ -52,6 +52,8 @@ class OverviewFragment : Fragment() {
             updateColors(myBundle.glutenFree, binding.glutenFreeTextView, binding.glutenFreeImageView)
             updateColors(myBundle.veryHealthy, binding.healthyTextView, binding.healthyImageView)
         }
+
+
         return binding.root
     }
 

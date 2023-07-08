@@ -1,7 +1,7 @@
 package com.example.myfoody.di
 
 import com.example.myfoody.util.Constants.Companion.BASE_URL
-import com.example.myfoody.date.Network.FoodRecipesApi
+import com.example.myfoody.date.network.FoodRecipesApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

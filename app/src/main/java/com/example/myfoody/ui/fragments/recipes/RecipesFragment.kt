@@ -113,7 +113,7 @@ class RecipesFragment : Fragment(), SearchView.OnQueryTextListener {
         lifecycleScope.launch {
             lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 networkListener = NetworkListener()
-                networkListener.registerNetworkCallback(requireContext())
+                networkListener.checkNetworkAvailability(requireContext())
                     .collect { status ->
                         Log.d("NetworkListener", status.toString())
                         recipesViewModel.networkStatus = status
