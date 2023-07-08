@@ -14,29 +14,17 @@ class NetworkListener : ConnectivityManager.NetworkCallback() {
     private val isNetworkAvailable = MutableStateFlow(false)
 
     /**
-     * This function checks if the device is connected to the internet or not and returns a MutableStateFlow of Boolean
+     * This function registers the network callback and returns a MutableStateFlow of Boolean
      * @param context
      * @return isNetworkAvailable
      */
-    fun checkNetworkAvailability(context: Context): MutableStateFlow<Boolean> {
+    fun registerNetworkCallback(context: Context): MutableStateFlow<Boolean> {
         val connectivityManager =
             context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         connectivityManager.registerDefaultNetworkCallback(this)
-
-        var isConnected = false
-        connectivityManager.allNetworks.forEach { network ->
-            val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
-
-            networkCapabilities?.let {
-                if (it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
-                    isConnected = true
-                    return@forEach
-                }
-            }
-        }
-        isNetworkAvailable.value = isConnected
         return isNetworkAvailable
     }
+
 
     /**
      * This function is called when the network is available
