@@ -18,14 +18,14 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="tiramisu">
         <activity
-            android:name=".ui.DetailsActivity"
+            android:name=".presentation.details.DetailsActivity"
             android:screenOrientation="portrait"
             android:label="Details"
             android:theme="@style/DetailsActivityStyle"
             android:exported="false"
             tools:ignore="LockedOrientationActivity" />
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".presentation.main.MainActivity"
             android:screenOrientation="portrait"
             android:exported="true"
             android:theme="@style/SplashTheme"
