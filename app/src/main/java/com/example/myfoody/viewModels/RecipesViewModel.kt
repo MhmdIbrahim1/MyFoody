@@ -6,10 +6,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.example.myfoody.date.DataStoreRepository
-import com.example.myfoody.date.MealAndDietType
+import kotlinx.coroutines.flow.first
 import com.example.myfoody.util.Constants.Companion.API_KEY
-import com.example.myfoody.util.Constants.Companion.DEFAULT_DIET_TYPE
-import com.example.myfoody.util.Constants.Companion.DEFAULT_MEAL_TYPE
 import com.example.myfoody.util.Constants.Companion.DEFAULT_RECIPES_NUMBER
 import com.example.myfoody.util.Constants.Companion.QUERY_ADD_RECIPE_INFORMATION
 import com.example.myfoody.util.Constants.Companion.QUERY_API_KEY
@@ -30,9 +28,6 @@ class RecipesViewModel @Inject constructor(
     private val dataSoreRepository: DataStoreRepository
 ) : AndroidViewModel(application) {
 
-    private var mealType = DEFAULT_MEAL_TYPE
-    private var dietType = DEFAULT_DIET_TYPE
-    private lateinit var mealAndDiet: MealAndDietType
 
     var networkStatus = false
     var backOnline = false
@@ -40,21 +35,6 @@ class RecipesViewModel @Inject constructor(
     // Read the meal and diet type preferences using DataStoreRepository.
     val readMealAndDietType = dataSoreRepository.readMealAndDietType
     val readBackOnline = dataSoreRepository.readBackOnline.asLiveData()
-
-    /**
-     * Get recipes from the API call.
-     */
-    fun saveMealAndDietType() =
-        viewModelScope.launch(Dispatchers.IO) {
-            if (this@RecipesViewModel::mealAndDiet.isInitialized) {
-                dataSoreRepository.saveMealAndDietType(
-                    mealAndDiet.selectedMealType,
-                    mealAndDiet.selectedMealTypeId,
-                    mealAndDiet.selectedDietType,
-                    mealAndDiet.selectedDietTypeId
-                )
-            }
-        }
 
     /**
      * Save the meal and diet type preferences.
@@ -82,20 +62,14 @@ class RecipesViewModel @Inject constructor(
      *
      * @return A HashMap with query parameters for the API call.
      */
-    fun applyQueries(): HashMap<String, String> {
+    suspend fun applyQueries(): HashMap<String, String> {
+        val selected = readMealAndDietType.first()
         val queries: HashMap<String, String> = HashMap()
-
-        viewModelScope.launch {
-            readMealAndDietType.collect { value ->
-                mealType = value.selectedMealType
-                dietType = value.selectedDietType
-            }
-        }
 
         queries[QUERY_NUMBER] = DEFAULT_RECIPES_NUMBER
         queries[QUERY_API_KEY] = API_KEY
-        queries[QUERY_TYPE] = mealType
-        queries[QUERY_DIET] = dietType
+        queries[QUERY_TYPE] = selected.selectedMealType
+        queries[QUERY_DIET] = selected.selectedDietType
         queries[QUERY_ADD_RECIPE_INFORMATION] = "true"
         queries[QUERY_FILL_INGREDIENTS] = "true"
 

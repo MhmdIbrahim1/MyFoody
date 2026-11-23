@@ -1,51 +1,84 @@
 package com.example.myfoody.ui.fragments.ingredients
 
-import android.os.Bundle
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.myfoody.adapters.IngredientsAdapter
-import com.example.myfoody.databinding.FragmentIngredientsBinding
-import com.example.myfoody.models.Result
-import com.example.myfoody.util.Constants.Companion.RECIPE_RESULT_KEY
-import com.example.myfoody.util.retrieveParcelable
+import android.widget.ImageView
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.Card
+import androidx.compose.material.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.example.myfoody.R
+import com.example.myfoody.models.ExtendedIngredient
+import com.example.myfoody.ui.theme.MyFoodyTheme
+import com.example.myfoody.ui.theme.RecipeImage
+import com.example.myfoody.ui.theme.recipeFont
+import com.example.myfoody.util.Constants.Companion.BASE_IMAGE_URL
+import java.util.Locale
 
-class Ingredients : Fragment() {
-
-    private val mAdapter: IngredientsAdapter by lazy { IngredientsAdapter() }
-    private var _binding: FragmentIngredientsBinding? = null
-    private val binding get() = _binding!!
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        // Inflate the layout for this fragment
-        _binding =  FragmentIngredientsBinding.inflate(layoutInflater, container, false)
-
-        // Retrieve recipe details from arguments bundle
-        val args = arguments
-        val myBundle: Result? = args?.retrieveParcelable(RECIPE_RESULT_KEY)
-
-        // Set up the RecyclerView
-        setupRecyclerView()
-
-        // Populate the layout views with recipe data
-        myBundle?.extendedIngredients?.let { mAdapter.setData(it) }
-
-        return binding.root
+@Composable
+fun IngredientsScreen(ingredients: List<ExtendedIngredient>) {
+    LazyColumn(Modifier.fillMaxSize().background(colorResource(R.color.backgroundColor))) {
+        items(ingredients) { ingredient -> IngredientRow(ingredient) }
     }
+}
 
-    // Set up the RecyclerView
-    private fun setupRecyclerView() {
-        binding.ingredientsRecyclerview.adapter = mAdapter
-        binding.ingredientsRecyclerview.layoutManager = LinearLayoutManager(requireContext())
+@Composable
+private fun IngredientRow(ingredient: ExtendedIngredient) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(4.dp),
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, colorResource(R.color.strokeColor)),
+        backgroundColor = colorResource(R.color.cardBackgroundColor)
+    ) {
+        Box(Modifier.fillMaxWidth().heightIn(min = 100.dp)) {
+            Box(Modifier.matchParentSize()) {
+                Box(
+                    Modifier.width(120.dp).fillMaxHeight().background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    RecipeImage(BASE_IMAGE_URL + ingredient.image, Modifier.size(100.dp), ImageView.ScaleType.FIT_CENTER)
+                }
+            }
+            Column(
+                modifier = Modifier.padding(start = 120.dp).padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    ingredient.name.replaceFirstChar { it.titlecase(Locale.ROOT) },
+                    fontSize = 20.sp, fontFamily = recipeFont(bold = true), fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.titleColor)
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    IngredientText(ingredient.amount.toString())
+                    IngredientText(ingredient.unit)
+                }
+                IngredientText(ingredient.consistency)
+                IngredientText(ingredient.original)
+            }
+        }
     }
+}
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+@Composable
+private fun IngredientText(text: String) {
+    Text(text, fontSize = 14.sp, color = colorResource(R.color.descriptionColor))
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun IngredientsPreview() {
+    MyFoodyTheme {
+        IngredientsScreen(listOf(ExtendedIngredient(100.0, "Solid", "", "carrot", "1 chopped carrot", "grams")))
     }
-
 }

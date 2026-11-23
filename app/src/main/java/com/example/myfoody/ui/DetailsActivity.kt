@@ -1,175 +1,109 @@
 package com.example.myfoody.ui
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.util.Log
-import android.view.Menu
-import android.view.MenuItem
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.activity.viewModels
-import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.runtime.*
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.navArgs
 import com.example.myfoody.R
-import com.example.myfoody.adapters.PagerAdapter
-import com.example.myfoody.databinding.ActivityDetailsBinding
 import com.example.myfoody.date.database.entities.FavoritesEntity
-import com.example.myfoody.ui.fragments.ingredients.Ingredients
-import com.example.myfoody.ui.fragments.instructions.Instructions
-import com.example.myfoody.ui.fragments.overview.OverviewFragment
+
+import com.example.myfoody.ui.fragments.ingredients.IngredientsScreen
+import com.example.myfoody.ui.fragments.instructions.InstructionsScreen
+import com.example.myfoody.ui.fragments.overview.OverviewScreen
+import com.example.myfoody.ui.theme.MyFoodyTheme
+import kotlinx.coroutines.launch
 import com.example.myfoody.viewModels.MainViewModel
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 
-/**
- * Activity that displays the details of a recipe.
- */
 @AndroidEntryPoint
 class DetailsActivity : AppCompatActivity() {
-    private var _binding: ActivityDetailsBinding? = null
-    private val binding get() = _binding!!
     private val args by navArgs<DetailsActivityArgs>()
     private val mainViewModel: MainViewModel by viewModels()
-    private var recipeSaved = false
-    private var savedRecipeId = 0
-    private lateinit var menuItem: MenuItem
 
+    @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        _binding = ActivityDetailsBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        setSupportActionBar(binding.toolbar)
-        binding.toolbar.setTitleTextColor(ContextCompat.getColor(this, R.color.white))
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-
-        // Create a list of fragments to be displayed in the ViewPager
-        val fragments = ArrayList<Fragment>()
-        fragments.add(OverviewFragment())
-        fragments.add(Ingredients())
-        fragments.add(Instructions())
-
-        // Create a list of titles corresponding to each fragment
-        val titles = ArrayList<String>()
-        titles.add("Overview")
-        titles.add("Ingredients")
-        titles.add("Instructions")
-
-        // Pass the recipe details as a bundle to the PagerAdapter
-        val resultBundle = Bundle()
-        resultBundle.putParcelable("recipeBundle", args.result)
-
-        // Create a PagerAdapter and set it to the ViewPager
-        val pagerAdapter = PagerAdapter(resultBundle, fragments, this)
-
-        binding.viewPager2.apply {
-            adapter = pagerAdapter
-        }
-
-        TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            tab.text = titles[position]
-        }.attach()
-    }
-
-    /**
-     * Inflates the options menu.
-     * @param menu The menu to be inflated.
-     * @return Boolean value indicating if the menu was inflated.
-     */
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
-        menuInflater.inflate(R.menu.details_menu, menu)
-        menuItem = menu!!.findItem(R.id.saved_favorite_menu)
-        checkSavedRecipes(menuItem)
-        return true
-    }
-
-    /**
-     * Handles the selection of options menu items.
-     * @param item The selected menu item.
-     * @return Boolean value indicating if the item selection was handled.
-     */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) {
-            finish()
-        } else if (item.itemId == R.id.saved_favorite_menu && !recipeSaved) {
-            saveToFavorites(item)
-        } else if (item.itemId == R.id.saved_favorite_menu && recipeSaved) {
-            removeFromFavorites(item)
-        }
-        return super.onOptionsItemSelected(item)
-    }
-
-
-    /**
-     * Handles the selection of options menu items.
-     */
-    private fun checkSavedRecipes(menuItem: MenuItem) {
-        // Observe the list of favorite recipes
-        mainViewModel.readFavoriteRecipes.observe(this) { favoritesEntity ->
-            try {
-                // Loop through the list of favorite recipes
-                for (savedRecipe in favoritesEntity) {
-                    // If the recipe is already saved, change the color of the menu item
-                    if (savedRecipe.result.id == args.result.id) {
-                        changeMenuItemColor(menuItem, R.color.yellow)
-                        savedRecipeId = savedRecipe.id
-                        recipeSaved = true
+        val root = ComposeView(this).apply { id = R.id.details_content }
+        setContentView(root)
+        root.setContent {
+            MyFoodyTheme {
+                val favorites by mainViewModel.readFavoriteRecipes.observeAsState()
+                val saved = favorites?.firstOrNull { it.result.id == args.result.id }
+                var pendingFavorite by remember { mutableStateOf<Boolean?>(null) }
+                LaunchedEffect(saved, pendingFavorite) {
+                    if (pendingFavorite == (saved != null)) pendingFavorite = null
+                }
+                val pager = rememberPagerState()
+                val scope = rememberCoroutineScope()
+                val tabs = listOf("Overview", "Ingredients", "Instructions")
+                val background = colorResource(R.color.actionBarBackgroundColor)
+                Column(Modifier.fillMaxSize()) {
+                    TopAppBar(
+                        title = { Text(title.toString()) },
+                        backgroundColor = background,
+                        contentColor = Color.White,
+                        navigationIcon = {
+                            IconButton(onClick = { finish() }) {
+                                Icon(Icons.Default.ArrowBack, stringResource(androidx.appcompat.R.string.abc_action_bar_up_description))
+                            }
+                        },
+                        actions = {
+                            IconButton(enabled = favorites != null && pendingFavorite == null, onClick = {
+                                if (pendingFavorite != null) return@IconButton
+                                pendingFavorite = saved == null
+                                val message = if (saved == null) {
+                                    mainViewModel.insertFavoriteRecipe(FavoritesEntity(0, args.result))
+                                    "Recipe saved."
+                                } else {
+                                    mainViewModel.deleteFavoriteRecipe(saved)
+                                    "Removed from Favorites."
+                                }
+                                Snackbar.make(root, message, Snackbar.LENGTH_SHORT).setAction("Okay") {}.show()
+                            }) {
+                                Icon(painterResource(R.drawable.ic_star), stringResource(R.string.saved_favorite_menu),
+                                    tint = if (saved == null) Color.White else colorResource(R.color.yellow))
+                            }
+                        }
+                    )
+                    TabRow(selectedTabIndex = pager.currentPage, backgroundColor = background, contentColor = Color.White) {
+                        tabs.forEachIndexed { index, label ->
+                            Tab(selected = pager.currentPage == index,
+                                onClick = { scope.launch { pager.animateScrollToPage(index) } },
+                                modifier = Modifier.height(48.dp)) {
+                                Text(label.uppercase(), maxLines = 1, style = MaterialTheme.typography.button,
+                                    letterSpacing = 0.sp, color = Color.White)
+                            }
+                        }
+                    }
+                    HorizontalPager(pageCount = tabs.size, state = pager, modifier = Modifier.weight(1f)) { page ->
+                        when (page) {
+                            0 -> OverviewScreen(args.result)
+                            1 -> IngredientsScreen(args.result.extendedIngredients)
+                            2 -> InstructionsScreen(args.result.sourceUrl)
+                        }
                     }
                 }
-            } catch (e: Exception) {
-                Log.d("DetailsActivity", e.message.toString())
             }
         }
     }
-
-    /**
-     * Saves the recipe to the favorites.
-     * @param item The selected menu item.
-     */
-    private fun saveToFavorites(item: MenuItem) {
-        // Create a FavoritesEntity object with the recipe details
-        val favoritesEntity =
-            FavoritesEntity(
-                0,
-                args.result
-            )
-        // Add the recipe to the favorites
-        mainViewModel.insertFavoriteRecipe(favoritesEntity)
-        changeMenuItemColor(item, R.color.yellow)
-        showSnackBar("Recipe saved.")
-        recipeSaved = true
-    }
-
-    private fun removeFromFavorites(item: MenuItem) {
-        // Create a FavoritesEntity object with the recipe details
-        val favoritesEntity =
-            FavoritesEntity(
-                savedRecipeId,
-                args.result
-            )
-        // Remove the recipe from the favorites
-        mainViewModel.deleteFavoriteRecipe(favoritesEntity)
-        changeMenuItemColor(item, R.color.white)
-        showSnackBar("Removed from Favorites.")
-        recipeSaved = false
-    }
-
-    private fun showSnackBar(message: String) {
-        Snackbar.make(
-            binding.detailsLayout,
-            message,
-            Snackbar.LENGTH_SHORT
-        ).setAction("Okay") {}.show()
-    }
-
-    /**
-     * Changes the color of the menu item when it is selected.
-     * @param item The selected menu item.
-     * @param color The color to be set.
-     */
-    private fun changeMenuItemColor(item: MenuItem, color: Int) {
-        item.icon?.setTint(ContextCompat.getColor(this, color))
-    }
-
 }
-
-

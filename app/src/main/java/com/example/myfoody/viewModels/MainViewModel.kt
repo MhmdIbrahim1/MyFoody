@@ -18,7 +18,9 @@ import com.example.myfoody.models.FoodJoke
 import com.example.myfoody.models.FoodRecipe
 import com.example.myfoody.util.NetworkResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import retrofit2.Response
 import java.lang.Exception
@@ -117,8 +119,11 @@ class MainViewModel @Inject constructor(
     }
 
     // Function to search recipes using the provided query parameters.
-    fun searchRecipes(searchQuery: Map<String, String>) = viewModelScope.launch {
-        searchRecipesSafeCall(searchQuery)
+    private var activeSearch: Job? = null
+
+    fun searchRecipes(searchQuery: Map<String, String>) {
+        activeSearch?.cancel()
+        activeSearch = viewModelScope.launch { searchRecipesSafeCall(searchQuery) }
     }
     
     // Function to get a random food joke.
@@ -168,6 +173,8 @@ class MainViewModel @Inject constructor(
             try {
                 val response = repository.remote.searchRecipes(searchQuery)
                 searchedRecipesResponse.value = handleFoodRecipesResponse(response)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (e: Exception) {
                 searchedRecipesResponse.value = NetworkResult.Error("Recipes Not Found")
             }

@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="Legacy Compose sources" pattern="file[MyFoody.app*]:*//*||file:app/src//*||file:src//*" />
+</component>

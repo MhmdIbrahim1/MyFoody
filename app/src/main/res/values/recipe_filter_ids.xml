@@ -1,0 +1,24 @@
+<resources>
+    <item type="id" name="main_course_chip"/>
+    <item type="id" name="side_dish_chip"/>
+    <item type="id" name="dessert_chip"/>
+    <item type="id" name="appetizer_chip"/>
+    <item type="id" name="salad_chip"/>
+    <item type="id" name="bread_chip"/>
+    <item type="id" name="breakfast_chip"/>
+    <item type="id" name="soup_chip"/>
+    <item type="id" name="beverage_chip"/>
+    <item type="id" name="sauce_chip"/>
+    <item type="id" name="marinade_chip"/>
+    <item type="id" name="finger_food_chip"/>
+    <item type="id" name="snack_chip"/>
+    <item type="id" name="drink_chip"/>
+    <item type="id" name="gluten_free_chip"/>
+    <item type="id" name="ketogenic_chip"/>
+    <item type="id" name="vegetarian_chip"/>
+    <item type="id" name="vegan_chip"/>
+    <item type="id" name="pescetarian_chip"/>
+    <item type="id" name="paleo_chip"/>
+    <item type="id" name="primal_chip"/>
+    <item type="id" name="whole30_chip"/>
+</resources>

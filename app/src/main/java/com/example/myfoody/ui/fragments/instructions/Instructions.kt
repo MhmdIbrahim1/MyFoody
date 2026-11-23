@@ -1,59 +1,90 @@
 package com.example.myfoody.ui.fragments.instructions
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.MotionEvent
+import android.view.ViewConfiguration
 import android.webkit.WebChromeClient
 import android.webkit.WebSettings
+import android.webkit.WebView
 import android.webkit.WebViewClient
-import com.example.myfoody.databinding.FragmentInstructionsBinding
-import com.example.myfoody.models.Result
-import com.example.myfoody.util.Constants
-import com.example.myfoody.util.retrieveParcelable
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.key
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.viewinterop.AndroidView
+import com.example.myfoody.ui.theme.MyFoodyTheme
+import kotlin.math.abs
 
-
-class Instructions : Fragment() {
-    private var _binding: FragmentInstructionsBinding? = null
-    private val binding get() = _binding!!
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        // Inflate the layout for this fragment
-        _binding = FragmentInstructionsBinding.inflate(layoutInflater, container, false)
-
-        // Configure WebView settings
-        configureWebView()
-        // Retrieve recipe details from arguments bundle
-        val args = arguments
-        val myBundle: Result? = args?.retrieveParcelable(Constants.RECIPE_RESULT_KEY)
-
-
-        if (myBundle != null) {
-            // Load the recipe instructions in the WebView
-            binding.instructionsWebView.webViewClient = object : WebViewClient() {}
-            val websiteUrl: String = myBundle.sourceUrl
-            binding.instructionsWebView.loadUrl(websiteUrl)
-        }
-        return binding.root
-    }
-
-    private fun configureWebView() {
-        with(binding.instructionsWebView){
-            webViewClient = WebViewClient()
-            webChromeClient = WebChromeClient()
-            settings.apply {
-                domStorageEnabled = true
-                cacheMode = WebSettings.LOAD_DEFAULT
+@Composable
+fun InstructionsScreen(sourceUrl: String?, modifier: Modifier = Modifier) {
+    key(sourceUrl) {
+        val webView = remember { mutableStateOf<WebView?>(null) }
+        val history = rememberSaveable(saver = Saver(
+            save = { state -> Bundle().also { webView.value?.saveState(it) ?: it.putAll(state) } },
+            restore = { it }
+        )) { Bundle() }
+        DisposableEffect(Unit) {
+            onDispose {
+                webView.value?.let { view ->
+                    view.saveState(history)
+                    view.destroy()
+                }
             }
         }
+        AndroidView(
+            modifier = modifier.fillMaxSize(),
+            factory = { context ->
+                WebView(context).apply {
+                    webViewClient = WebViewClient()
+                    webChromeClient = WebChromeClient()
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    settings.allowFileAccess = false
+                    settings.allowContentAccess = false
+                    coordinatePagerGestures()
+                    settings.cacheMode = WebSettings.LOAD_DEFAULT
+                    if (history.isEmpty || restoreState(history) == null) sourceUrl?.let { loadUrl(it) }
+                }.also { webView.value = it }
+            }
+        )
     }
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+}
+
+private fun WebView.coordinatePagerGestures() {
+    val slop = ViewConfiguration.get(context).scaledTouchSlop
+    var downX = 0f
+    var downY = 0f
+    var directionLocked = false
+    setOnTouchListener { view, event ->
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                downX = event.x
+                downY = event.y
+                directionLocked = false
+            }
+            MotionEvent.ACTION_MOVE -> if (!directionLocked) {
+                val dx = abs(event.x - downX)
+                val dy = abs(event.y - downY)
+                if (maxOf(dx, dy) > slop) {
+                    view.parent?.requestDisallowInterceptTouchEvent(dy >= dx)
+                    directionLocked = true
+                }
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL ->
+                view.parent?.requestDisallowInterceptTouchEvent(false)
+        }
+        false
     }
+}
 
-
+@Preview(showBackground = true)
+@Composable
+private fun InstructionsPreview() {
+    MyFoodyTheme { InstructionsScreen(sourceUrl = null) }
 }
